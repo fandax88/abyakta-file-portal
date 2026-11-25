@@ -1,0 +1,8 @@
+# Salin file ini menjadi `.dev.vars` untuk pengujian lokal dengan `npx wrangler pages dev dist`
+# JANGAN commit file `.dev.vars` ke GitHub!
+
+GOOGLE_CLIENT_EMAIL="abyakta-repo-sa@project-id-anda.iam.gserviceaccount.com"
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
+GOOGLE_ROOT_FOLDER_ID="1AbCdEfGhIjKlMnOpQrStUvWxYz123456"
+ADMIN_PIN="123456"
+

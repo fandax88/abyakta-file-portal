@@ -1,0 +1,13 @@
+name = "abyakta-lab-repository"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+# Catatan Keamanan:
+# JANGAN menaruh nilai rahasia (secrets) langsung di wrangler.toml!
+# Gunakan file `.dev.vars` untuk development lokal, dan tambahkan Environment Variables
+# (Encrypted Secrets) melalui Dashboard Cloudflare Pages untuk Production & Preview:
+#   - GOOGLE_CLIENT_EMAIL
+#   - GOOGLE_PRIVATE_KEY
+#   - GOOGLE_ROOT_FOLDER_ID
+#   - ADMIN_PIN
+

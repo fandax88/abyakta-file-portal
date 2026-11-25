@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-grid: rgba(15, 23, 42, 0.04);
+  }
+
+  .dark {
+    --bg-grid: rgba(148, 163, 184, 0.05);
+  }
+
+  body {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Styling dialog modal natif agar bersih di Light & Dark Mode */
+  dialog::backdrop {
+    background-color: rgba(2, 6, 23, 0.65);
+    backdrop-filter: blur(4px);
+  }
+
+  dialog[open] {
+    animation: modalFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bg-tech-grid {
+  background-image: linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Scrollbar halus untuk tabel repositori */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
+
