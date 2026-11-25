@@ -131,20 +131,72 @@ async function importServiceAccountPrivateKey(rawPem) {
 }
 
 /**
- * Membuat JWT RS256 dan menukarnya menjadi Google OAuth2 Access Token.
+ * Membuat Access Token Google OAuth2:
+ * - Prioritas 1: OAuth2 Refresh Token (`GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REFRESH_TOKEN`)
+ *   -> Menggunakan kuota penyimpanan Google Drive pribadi milik Anda sendiri (cocok untuk @gmail.com / My Drive!).
+ * - Prioritas 2: Service Account JWT RS256 (`GOOGLE_CLIENT_EMAIL` + `GOOGLE_PRIVATE_KEY`)
+ *   -> Cocok untuk folder di dalam Google Workspace Shared Drive (Drive Bersama).
  */
 async function getGoogleAccessToken(env) {
+  const oauthClientId = env.GOOGLE_CLIENT_ID?.trim();
+  const oauthClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+  const oauthRefreshToken = env.GOOGLE_REFRESH_TOKEN?.trim();
+
+  const nowMs = Date.now();
+
+  // Mode 1: OAuth2 Refresh Token (Menggunakan kuota Google Drive akun pribadi Anda)
+  if (oauthClientId && oauthClientSecret && oauthRefreshToken) {
+    const cacheKey = `oauth:${oauthClientId}`;
+    if (
+      cachedGoogleToken.accessToken &&
+      cachedGoogleToken.clientEmail === cacheKey &&
+      cachedGoogleToken.expiresAt > nowMs + 60_000
+    ) {
+      return cachedGoogleToken.accessToken;
+    }
+
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: oauthClientId,
+        client_secret: oauthClientSecret,
+        refresh_token: oauthRefreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text();
+      throw new HttpError(
+        502,
+        `Gagal menukar GOOGLE_REFRESH_TOKEN menjadi Access Token (${tokenRes.status}): ${safeParseGoogleError(errBody)}`
+      );
+    }
+
+    const tokenData = await tokenRes.json();
+    cachedGoogleToken = {
+      clientEmail: cacheKey,
+      accessToken: tokenData.access_token,
+      expiresAt: nowMs + (Number(tokenData.expires_in) || 3600) * 1000,
+    };
+
+    return tokenData.access_token;
+  }
+
+  // Mode 2: Service Account JWT RS256 (Web Crypto API murni)
   const clientEmail = env.GOOGLE_CLIENT_EMAIL?.trim();
   const privateKeyPem = env.GOOGLE_PRIVATE_KEY;
 
   if (!clientEmail || !privateKeyPem) {
     throw new HttpError(
       500,
-      'Konfigurasi server belum lengkap: pastikan GOOGLE_CLIENT_EMAIL dan GOOGLE_PRIVATE_KEY sudah diatur di Cloudflare Pages.'
+      'Konfigurasi kredensial Google belum lengkap: isi (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN) untuk My Drive pribadi, atau (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY) untuk Shared Drive.'
     );
   }
 
-  const nowMs = Date.now();
   if (
     cachedGoogleToken.accessToken &&
     cachedGoogleToken.clientEmail === clientEmail &&
@@ -209,12 +261,12 @@ async function getGoogleAccessToken(env) {
  * Autentikasi Editor Mode (Stateless HMAC-SHA256 Session Token)
  * ========================================================================== */
 
-async function getAdminHmacKey(env) {
+function getAdminHmacKey(env) {
   const adminPin = env.ADMIN_PIN ? String(env.ADMIN_PIN) : '';
   if (!adminPin) {
     throw new HttpError(500, 'ADMIN_PIN belum dikonfigurasi pada Cloudflare Pages Environment Variables.');
   }
-  const secretMaterial = `abyakta-editor-v1:${adminPin}:${env.GOOGLE_CLIENT_EMAIL || 'default'}`;
+  const secretMaterial = `abyakta-editor-v1:${adminPin}:${env.GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_EMAIL || 'default'}`;
   return crypto.subtle.importKey(
     'raw',
     encoder.encode(secretMaterial),
@@ -719,13 +771,21 @@ async function handleDeleteItem(request, env, routeId = null) {
  * Memeriksa kesiapan variabel environment tanpa membocorkan nilai rahasia.
  */
 function handleHealth(env) {
+  const hasOAuth =
+    Boolean(env.GOOGLE_CLIENT_ID?.trim()) &&
+    Boolean(env.GOOGLE_CLIENT_SECRET?.trim()) &&
+    Boolean(env.GOOGLE_REFRESH_TOKEN?.trim());
+  const hasServiceAccount =
+    Boolean(env.GOOGLE_CLIENT_EMAIL?.trim()) &&
+    Boolean(env.GOOGLE_PRIVATE_KEY?.includes('PRIVATE KEY'));
+
   const checks = {
-    GOOGLE_CLIENT_EMAIL: Boolean(env.GOOGLE_CLIENT_EMAIL?.trim()),
-    GOOGLE_PRIVATE_KEY: Boolean(env.GOOGLE_PRIVATE_KEY?.includes('PRIVATE KEY')),
+    authMode: hasOAuth ? 'oauth_refresh_token' : hasServiceAccount ? 'service_account' : 'unconfigured',
+    GOOGLE_AUTH_CONFIGURED: hasOAuth || hasServiceAccount,
     GOOGLE_ROOT_FOLDER_ID: isValidDriveId(env.GOOGLE_ROOT_FOLDER_ID?.trim()),
     ADMIN_PIN: Boolean(env.ADMIN_PIN && String(env.ADMIN_PIN).trim().length > 0),
   };
-  const ready = Object.values(checks).every(Boolean);
+  const ready = checks.GOOGLE_AUTH_CONFIGURED && checks.GOOGLE_ROOT_FOLDER_ID && checks.ADMIN_PIN;
   return jsonResponse({ ok: ready, checks }, ready ? 200 : 503);
 }
 
