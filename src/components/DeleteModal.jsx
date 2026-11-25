@@ -3,6 +3,7 @@ import { AlertTriangle, X, Loader2, AlertCircle } from 'lucide-react';
 
 export default function DeleteModal({ item, onClose, onConfirmDelete }) {
   const dialogRef = useRef(null);
+  const cancelBtnRef = useRef(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,6 +18,7 @@ export default function DeleteModal({ item, onClose, onConfirmDelete }) {
       if (!dialog.open) {
         dialog.showModal();
       }
+      setTimeout(() => cancelBtnRef.current?.focus(), 35);
     } else if (dialog.open) {
       dialog.close();
     }
@@ -45,20 +47,21 @@ export default function DeleteModal({ item, onClose, onConfirmDelete }) {
           onClose();
         }
       }}
-      className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+      aria-labelledby="delete-modal-title"
+      className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-2xl"
     >
       {item && (
         <div className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
-                <AlertTriangle className="h-5 w-5" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Konfirmasi Hapus {item.isFolder ? 'Folder' : 'File'}
+                <h2 id="delete-modal-title" className="font-display text-base font-bold text-[var(--text-primary)]">
+                  Hapus {item.isFolder ? 'Direktori' : 'Berkas'}?
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Item akan dipindahkan ke Trash Google Drive
                 </p>
               </div>
@@ -68,37 +71,41 @@ export default function DeleteModal({ item, onClose, onConfirmDelete }) {
               type="button"
               onClick={onClose}
               disabled={isDeleting}
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              aria-label="Tutup modal"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-[var(--text-secondary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
+              aria-label="Tutup dialog konfirmasi"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950/60">
-            <p className="break-all font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">
+          <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/65 p-3.5">
+            <p className="font-mono text-xs font-semibold text-[var(--text-primary)] wrap-anywhere">
               {item.name}
             </p>
             {item.isFolder && (
               <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-300">
-                Perhatian: Menghapus folder juga akan menyembunyikan seluruh file dan subfolder di dalamnya dari portal.
+                Seluruh berkas dan subfolder di dalamnya juga tidak akan tampil lagi di portal.
               </p>
             )}
           </div>
 
           {error && (
-            <div className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs text-rose-700 dark:text-rose-300">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div
+              role="alert"
+              className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="mt-6 flex items-center justify-end gap-2.5">
             <button
+              ref={cancelBtnRef}
               type="button"
               onClick={onClose}
               disabled={isDeleting}
-              className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="h-10 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
             >
               Batal
             </button>
@@ -106,10 +113,10 @@ export default function DeleteModal({ item, onClose, onConfirmDelete }) {
               type="button"
               onClick={handleConfirm}
               disabled={isDeleting}
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-55 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
             >
-              {isDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>Ya, Hapus</span>
+              {isDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
+              <span>Ya, Pindahkan ke Trash</span>
             </button>
           </div>
         </div>
@@ -117,4 +124,3 @@ export default function DeleteModal({ item, onClose, onConfirmDelete }) {
     </dialog>
   );
 }
-

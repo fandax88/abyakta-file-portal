@@ -17,12 +17,12 @@ export default function ToastContainer({ toasts, onDismiss }) {
               ? Info
               : CheckCircle2;
 
-        const colorClasses =
+        const borderClass =
           toast.type === 'error'
-            ? 'border-rose-500/35 bg-white text-rose-700 dark:bg-slate-900 dark:text-rose-300'
+            ? 'border-rose-500/40'
             : toast.type === 'info'
-              ? 'border-lab-500/35 bg-white text-slate-800 dark:bg-slate-900 dark:text-slate-100'
-              : 'border-emerald-500/35 bg-white text-slate-800 dark:bg-slate-900 dark:text-slate-100';
+              ? 'border-lab-500/40'
+              : 'border-emerald-500/40';
 
         const iconColor =
           toast.type === 'error'
@@ -34,17 +34,19 @@ export default function ToastContainer({ toasts, onDismiss }) {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border p-3.5 shadow-lg backdrop-blur ${colorClasses}`}
+            className={`pointer-events-auto flex items-start gap-2.5 rounded-2xl border ${borderClass} bg-[var(--bg-surface)]/95 p-3.5 text-[var(--text-primary)] shadow-xl backdrop-blur-md`}
           >
-            <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} />
-            <p className="flex-1 text-xs font-medium leading-relaxed">{toast.message}</p>
+            <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} aria-hidden="true" />
+            <p className="flex-1 text-xs font-medium leading-relaxed wrap-anywhere">
+              {toast.message}
+            </p>
             <button
               type="button"
               onClick={() => onDismiss(toast.id)}
-              className="rounded p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[var(--text-secondary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
               aria-label="Tutup notifikasi"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
         );
@@ -52,4 +54,3 @@ export default function ToastContainer({ toasts, onDismiss }) {
     </div>
   );
 }
-

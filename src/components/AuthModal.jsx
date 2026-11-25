@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyRound, X, Loader2, AlertCircle } from 'lucide-react';
+import { KeyRound, X, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) {
   const dialogRef = useRef(null);
   const inputRef = useRef(null);
   const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -14,11 +15,12 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
 
     if (isOpen) {
       setPin('');
+      setShowPin(false);
       setError('');
       if (!dialog.open) {
         dialog.showModal();
       }
-      setTimeout(() => inputRef.current?.focus(), 40);
+      setTimeout(() => inputRef.current?.focus(), 35);
     } else if (dialog.open) {
       dialog.close();
     }
@@ -26,7 +28,13 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!pin.trim() || isSubmitting) return;
+    if (isSubmitting) return;
+
+    if (!pin.trim()) {
+      setError('Silakan masukkan Admin PIN terlebih dahulu.');
+      inputRef.current?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
@@ -35,6 +43,7 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
       onClose();
     } catch (err) {
       setError(err.message || 'Gagal memverifikasi PIN Admin.');
+      inputRef.current?.focus();
     } finally {
       setIsSubmitting(false);
     }
@@ -49,20 +58,21 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
           onClose();
         }
       }}
-      className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+      aria-labelledby="auth-modal-title"
+      className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0 text-[var(--text-primary)] shadow-2xl"
     >
-      <form onSubmit={handleFormSubmit} className="p-6">
+      <form onSubmit={handleFormSubmit} noValidate className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lab-500/10 text-lab-600 dark:bg-lab-400/15 dark:text-lab-400">
-              <KeyRound className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-lab-500/25 bg-lab-500/10 text-lab-600 dark:text-lab-400">
+              <KeyRound className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <h2 id="auth-modal-title" className="font-display text-base font-bold text-[var(--text-primary)]">
                 Autentikasi Editor Mode
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Masukkan Admin PIN untuk mengelola file &amp; folder lab
+              <p className="text-xs text-[var(--text-secondary)]">
+                Masukkan Admin PIN untuk mengunggah &amp; mengelola berkas
               </p>
             </div>
           </div>
@@ -71,42 +81,69 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-            aria-label="Tutup modal"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-[var(--text-secondary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
+            aria-label="Tutup modal autentikasi"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
         {isDemoMode && (
-          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-            <strong>Mode Pratinjau Demo:</strong> Masukkan PIN apa saja (mis. <code className="font-mono">123456</code>) untuk mencoba antarmuka Editor Mode &amp; simulasi progress bar upload.
+          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-800 dark:text-amber-200">
+            <strong>Mode Simulasi:</strong> Masukkan PIN bebas (contoh: <code className="font-mono">123456</code>) untuk mencoba panel Editor Mode.
           </div>
         )}
 
-        <div className="mt-4">
+        <div className="mt-5">
           <label
             htmlFor="admin-pin-input"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+            className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]"
           >
-            Admin PIN
+            Admin PIN <span className="text-rose-500">*</span>
           </label>
-          <input
-            ref={inputRef}
-            id="admin-pin-input"
-            type="password"
-            autoComplete="current-password"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            placeholder="••••••••"
-            required
-            className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 font-mono text-base tracking-widest text-slate-900 focus:border-lab-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-lab-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:border-lab-400"
-          />
+          <div className="relative mt-1.5">
+            <input
+              ref={inputRef}
+              id="admin-pin-input"
+              type={showPin ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={pin}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'admin-pin-error' : undefined}
+              onChange={(e) => {
+                setPin(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="Masukkan PIN Admin"
+              className={`h-11 w-full rounded-xl border bg-[var(--bg-elevated)]/60 pl-3.5 pr-11 font-mono text-sm text-[var(--text-primary)] transition focus:bg-[var(--bg-surface)] focus:outline-none focus-visible:ring-2 ${
+                error
+                  ? 'border-rose-500 focus-visible:ring-rose-500/25'
+                  : 'border-[var(--border-strong)] focus:border-lab-500 focus-visible:ring-lab-500/25'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPin((prev) => !prev)}
+              className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-secondary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
+              aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
+              aria-pressed={showPin}
+            >
+              {showPin ? (
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Eye className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs text-rose-700 dark:text-rose-300">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div
+            id="admin-pin-error"
+            role="alert"
+            className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
@@ -116,16 +153,16 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="h-10 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
           >
             Batal
           </button>
           <button
             type="submit"
-            disabled={!pin.trim() || isSubmitting}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-lab-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-lab-700 disabled:opacity-50 dark:bg-lab-600 dark:hover:bg-lab-500"
+            disabled={isSubmitting}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-lab-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-lab-700 disabled:opacity-55 focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-500"
           >
-            {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
             <span>Aktifkan Editor Mode</span>
           </button>
         </div>
@@ -133,4 +170,3 @@ export default function AuthModal({ isOpen, onClose, onSubmitPin, isDemoMode }) 
     </dialog>
   );
 }
-

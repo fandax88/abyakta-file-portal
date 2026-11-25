@@ -10,10 +10,11 @@ import {
   Film,
   Database,
   File,
+  Layers,
 } from 'lucide-react';
 
 /**
- * Memformat ukuran byte ke KB / MB / GB dengan presisi teknis.
+ * Memformat ukuran byte ke KB / MB / GB dengan presisi teknis (tabular-nums).
  */
 export function formatBytes(bytes) {
   if (bytes === null || bytes === undefined || Number.isNaN(Number(bytes))) {
@@ -26,10 +27,13 @@ export function formatBytes(bytes) {
   const k = 1024;
   const i = Math.min(Math.floor(Math.log(num) / Math.log(k)), units.length - 1);
   const val = num / Math.pow(k, i);
-
-  // Tampilkan desimal lebih detail untuk MB/GB/TB
   const decimals = i >= 2 ? 2 : i === 1 ? 1 : 0;
   return `${val.toFixed(decimals)} ${units[i]}`;
+}
+
+export function formatExactBytes(bytes) {
+  if (bytes === null || bytes === undefined || Number.isNaN(Number(bytes))) return '—';
+  return `${new Intl.NumberFormat('id-ID').format(Number(bytes))} byte`;
 }
 
 /**
@@ -79,133 +83,225 @@ export function getFileExtension(name = '', explicitExt = null) {
 }
 
 /**
- * Mengembalikan metadata visual (ikon, label kategori, warna badge) sesuai tipe/ekstensi file lab.
+ * Definisi filter chip kategori untuk Bento Filter Bar.
+ */
+export const CATEGORY_FILTERS = [
+  { key: 'all', label: 'Semua Item', Icon: Layers, dotClass: 'bg-blue-500' },
+  { key: 'folder', label: 'Folder', Icon: Folder, dotClass: 'bg-amber-500' },
+  { key: 'installer', label: 'Installer', Icon: Cpu, dotClass: 'bg-sky-500' },
+  { key: 'iso', label: 'ISO & VM', Icon: Disc, dotClass: 'bg-violet-500' },
+  { key: 'archive', label: 'Arsip', Icon: FileArchive, dotClass: 'bg-orange-500' },
+  { key: 'script', label: 'Skrip & Kode', Icon: Terminal, dotClass: 'bg-emerald-500' },
+  { key: 'doc', label: 'Dokumen', Icon: FileText, dotClass: 'bg-rose-500' },
+];
+
+/**
+ * Mengembalikan metadata visual (ikon, groupKey untuk filter, label kategori, warna badge & bar)
+ * sesuai tipe/ekstensi file laboratorium.
  */
 export function getFileVisualMeta(item) {
   if (item?.isFolder || item?.mimeType === 'application/vnd.google-apps.folder') {
     return {
+      groupKey: 'folder',
       Icon: Folder,
       badge: 'DIR',
-      category: 'Folder Kategori',
-      iconBg: 'bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400 border-amber-500/20',
-      badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+      category: 'Direktori',
+      barColor: 'bg-amber-500',
+      iconBg:
+        'bg-amber-500/12 text-amber-700 border-amber-500/25 dark:bg-amber-400/15 dark:text-amber-300 dark:border-amber-400/25',
+      badgeClass:
+        'bg-amber-500/10 text-amber-800 border-amber-500/25 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/25',
+      accentRing: 'group-hover:border-amber-500/45 dark:group-hover:border-amber-400/40',
     };
   }
 
   const ext = getFileExtension(item?.name, item?.fileExtension);
-  const upperExt = ext ? ext.toUpperCase() : 'FILE';
+  const upperExt = ext ? ext.toUpperCase() : 'BIN';
 
   // 1. Installer & Executable (EXE, MSI, DEB, RPM, APK, APPIMAGE)
-  if (['exe', 'msi', 'deb', 'rpm', 'apk', 'appimage', 'pkg', 'bin'].includes(ext)) {
+  if (['exe', 'msi', 'deb', 'rpm', 'apk', 'appimage', 'pkg', 'bin', 'npk'].includes(ext)) {
     return {
+      groupKey: 'installer',
       Icon: Cpu,
       badge: upperExt,
       category: 'Installer / Binary',
-      iconBg: 'bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-400 border-sky-500/20',
-      badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25',
+      barColor: 'bg-sky-500',
+      iconBg:
+        'bg-sky-500/12 text-sky-700 border-sky-500/25 dark:bg-sky-400/15 dark:text-sky-300 dark:border-sky-400/25',
+      badgeClass:
+        'bg-sky-500/10 text-sky-800 border-sky-500/25 dark:bg-sky-400/10 dark:text-sky-300 dark:border-sky-400/25',
+      accentRing: 'group-hover:border-sky-500/40 dark:group-hover:border-sky-400/40',
     };
   }
 
-  // 2. Arsip Terkompresi (ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2)
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'xz', 'bz2', 'zst'].includes(ext)) {
+  // 2. Disk & VM Image (ISO, IMG, DMG, OVA, OVF, VMDK, VDI, QCOW2)
+  if (['iso', 'img', 'dmg', 'ova', 'ovf', 'vmdk', 'vdi', 'qcow2', 'vhd', 'vhdx'].includes(ext)) {
     return {
-      Icon: FileArchive,
-      badge: upperExt,
-      category: 'Arsip Terkompresi',
-      iconBg: 'bg-orange-500/10 text-orange-600 dark:bg-orange-400/15 dark:text-orange-400 border-orange-500/20',
-      badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/25',
-    };
-  }
-
-  // 3. Disk & VM Image (ISO, IMG, DMG, OVA, OVF, VMDK, VDI, QCOW2)
-  if (['iso', 'img', 'dmg', 'ova', 'ovf', 'vmdk', 'vdi', 'qcow2', 'vhd'].includes(ext)) {
-    return {
+      groupKey: 'iso',
       Icon: Disc,
       badge: upperExt,
       category: 'Disk / VM Image',
-      iconBg: 'bg-violet-500/10 text-violet-600 dark:bg-violet-400/15 dark:text-violet-400 border-violet-500/20',
-      badgeClass: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/25',
+      barColor: 'bg-violet-500',
+      iconBg:
+        'bg-violet-500/12 text-violet-700 border-violet-500/25 dark:bg-violet-400/15 dark:text-violet-300 dark:border-violet-400/25',
+      badgeClass:
+        'bg-violet-500/10 text-violet-800 border-violet-500/25 dark:bg-violet-400/10 dark:text-violet-300 dark:border-violet-400/25',
+      accentRing: 'group-hover:border-violet-500/40 dark:group-hover:border-violet-400/40',
+    };
+  }
+
+  // 3. Arsip Terkompresi (ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2)
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'xz', 'bz2', 'zst'].includes(ext)) {
+    return {
+      groupKey: 'archive',
+      Icon: FileArchive,
+      badge: upperExt,
+      category: 'Arsip Terkompresi',
+      barColor: 'bg-orange-500',
+      iconBg:
+        'bg-orange-500/12 text-orange-700 border-orange-500/25 dark:bg-orange-400/15 dark:text-orange-300 dark:border-orange-400/25',
+      badgeClass:
+        'bg-orange-500/10 text-orange-800 border-orange-500/25 dark:bg-orange-400/10 dark:text-orange-300 dark:border-orange-400/25',
+      accentRing: 'group-hover:border-orange-500/40 dark:group-hover:border-orange-400/40',
     };
   }
 
   // 4. Modul & Dokumen Praktikum (PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, MD, TXT)
   if (['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv', 'md', 'txt', 'rtf'].includes(ext)) {
     return {
+      groupKey: 'doc',
       Icon: FileText,
       badge: upperExt,
       category: 'Dokumen / Modul',
-      iconBg: 'bg-rose-500/10 text-rose-600 dark:bg-rose-400/15 dark:text-rose-400 border-rose-500/20',
-      badgeClass: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25',
+      barColor: 'bg-rose-500',
+      iconBg:
+        'bg-rose-500/12 text-rose-700 border-rose-500/25 dark:bg-rose-400/15 dark:text-rose-300 dark:border-rose-400/25',
+      badgeClass:
+        'bg-rose-500/10 text-rose-800 border-rose-500/25 dark:bg-rose-400/10 dark:text-rose-300 dark:border-rose-400/25',
+      accentRing: 'group-hover:border-rose-500/40 dark:group-hover:border-rose-400/40',
     };
   }
 
-  // 5. Lab Scripts & Automation (SH, PS1, PY, BAT, CMD, RB, PL)
-  if (['sh', 'bash', 'zsh', 'ps1', 'psm1', 'py', 'bat', 'cmd', 'awk', 'sed'].includes(ext)) {
+  // 5. Lab Scripts & Automation (SH, PS1, PY, BAT, CMD, RSC)
+  if (['sh', 'bash', 'zsh', 'ps1', 'psm1', 'py', 'bat', 'cmd', 'awk', 'sed', 'rsc'].includes(ext)) {
     return {
+      groupKey: 'script',
       Icon: Terminal,
       badge: upperExt,
       category: 'Skrip Otomasi Lab',
-      iconBg: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400 border-emerald-500/20',
-      badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25',
+      barColor: 'bg-emerald-500',
+      iconBg:
+        'bg-emerald-500/12 text-emerald-700 border-emerald-500/25 dark:bg-emerald-400/15 dark:text-emerald-300 dark:border-emerald-400/25',
+      badgeClass:
+        'bg-emerald-500/10 text-emerald-800 border-emerald-500/25 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-400/25',
+      accentRing: 'group-hover:border-emerald-500/40 dark:group-hover:border-emerald-400/40',
     };
   }
 
   // 6. Source Code & Konfigurasi Jaringan (JS, TS, C, CPP, JAVA, GO, JSON, YAML, PKT, CONF)
   if (
-    ['js', 'ts', 'jsx', 'tsx', 'c', 'cpp', 'h', 'java', 'go', 'rs', 'php', 'html', 'css', 'json', 'yaml', 'yml', 'toml', 'ini', 'conf', 'cfg', 'pkt', 'gns3project'].includes(ext)
+    [
+      'js',
+      'ts',
+      'jsx',
+      'tsx',
+      'c',
+      'cpp',
+      'h',
+      'java',
+      'go',
+      'rs',
+      'php',
+      'html',
+      'css',
+      'json',
+      'yaml',
+      'yml',
+      'toml',
+      'ini',
+      'conf',
+      'cfg',
+      'pkt',
+      'gns3project',
+    ].includes(ext)
   ) {
     return {
+      groupKey: 'script',
       Icon: FileCode,
-      badge: upperExt,
+      badge: upperExt.slice(0, 6),
       category: 'Kode / Konfigurasi',
-      iconBg: 'bg-teal-500/10 text-teal-600 dark:bg-teal-400/15 dark:text-teal-400 border-teal-500/20',
-      badgeClass: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/25',
+      barColor: 'bg-teal-500',
+      iconBg:
+        'bg-teal-500/12 text-teal-700 border-teal-500/25 dark:bg-teal-400/15 dark:text-teal-300 dark:border-teal-400/25',
+      badgeClass:
+        'bg-teal-500/10 text-teal-800 border-teal-500/25 dark:bg-teal-400/10 dark:text-teal-300 dark:border-teal-400/25',
+      accentRing: 'group-hover:border-teal-500/40 dark:group-hover:border-teal-400/40',
     };
   }
 
   // 7. Database & Dataset
   if (['sql', 'sqlite', 'db', 'parquet', 'bak'].includes(ext)) {
     return {
+      groupKey: 'other',
       Icon: Database,
       badge: upperExt,
       category: 'Database / Dataset',
-      iconBg: 'bg-cyan-500/10 text-cyan-600 dark:bg-cyan-400/15 dark:text-cyan-400 border-cyan-500/20',
-      badgeClass: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25',
+      barColor: 'bg-cyan-500',
+      iconBg:
+        'bg-cyan-500/12 text-cyan-700 border-cyan-500/25 dark:bg-cyan-400/15 dark:text-cyan-300 dark:border-cyan-400/25',
+      badgeClass:
+        'bg-cyan-500/10 text-cyan-800 border-cyan-500/25 dark:bg-cyan-400/10 dark:text-cyan-300 dark:border-cyan-400/25',
+      accentRing: 'group-hover:border-cyan-500/40 dark:group-hover:border-cyan-400/40',
     };
   }
 
   // 8. Gambar & Video
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) {
     return {
+      groupKey: 'other',
       Icon: Image,
       badge: upperExt,
-      category: 'Gambar',
-      iconBg: 'bg-pink-500/10 text-pink-600 dark:bg-pink-400/15 dark:text-pink-400 border-pink-500/20',
-      badgeClass: 'bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-500/25',
+      category: 'Gambar / Aset',
+      barColor: 'bg-pink-500',
+      iconBg:
+        'bg-pink-500/12 text-pink-700 border-pink-500/25 dark:bg-pink-400/15 dark:text-pink-300 dark:border-pink-400/25',
+      badgeClass:
+        'bg-pink-500/10 text-pink-800 border-pink-500/25 dark:bg-pink-400/10 dark:text-pink-300 dark:border-pink-400/25',
+      accentRing: 'group-hover:border-pink-500/40 dark:group-hover:border-pink-400/40',
     };
   }
 
   if (['mp4', 'mkv', 'webm', 'mov', 'avi'].includes(ext)) {
     return {
+      groupKey: 'other',
       Icon: Film,
       badge: upperExt,
       category: 'Video Rekaman',
-      iconBg: 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-400 border-indigo-500/20',
-      badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+      barColor: 'bg-indigo-500',
+      iconBg:
+        'bg-indigo-500/12 text-indigo-700 border-indigo-500/25 dark:bg-indigo-400/15 dark:text-indigo-300 dark:border-indigo-400/25',
+      badgeClass:
+        'bg-indigo-500/10 text-indigo-800 border-indigo-500/25 dark:bg-indigo-400/10 dark:text-indigo-300 dark:border-indigo-400/25',
+      accentRing: 'group-hover:border-indigo-500/40 dark:group-hover:border-indigo-400/40',
     };
   }
 
   return {
+    groupKey: 'other',
     Icon: File,
     badge: upperExt.slice(0, 6),
     category: 'Berkas Umum',
-    iconBg: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300 border-slate-500/20',
-    badgeClass: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/25',
+    barColor: 'bg-slate-500',
+    iconBg:
+      'bg-slate-500/10 text-slate-700 border-slate-400/30 dark:bg-slate-400/15 dark:text-slate-300 dark:border-slate-500/30',
+    badgeClass:
+      'bg-slate-500/10 text-slate-700 border-slate-400/30 dark:bg-slate-400/10 dark:text-slate-300 dark:border-slate-500/30',
+    accentRing: 'group-hover:border-slate-400/50 dark:group-hover:border-slate-500/50',
   };
 }
 
 /**
- * Data contoh (hanya dipakai jika pengguna mengaktifkan "Pratinjau Mode Demo" sebelum kredensial GCP diisi).
+ * Data contoh (hanya dipakai jika pengguna mengaktifkan "Pratinjau Mode Demo").
  */
 export const DEMO_REPOSITORY_TREE = {
   root: {
@@ -237,17 +333,19 @@ export const DEMO_REPOSITORY_TREE = {
         size: 2794840064,
         modifiedTime: '2026-11-18T14:20:00.000Z',
         fileExtension: 'iso',
+        md5Checksum: 'e240e4b801f7bb68c20d1356b60968ad',
         webContentLink: 'https://file.abyakta-h.id/#demo-ubuntu-iso',
       },
       {
-        id: 'demo-file-wireshark',
-        name: 'Wireshark-4.4.1-x64.exe',
+        id: 'demo-file-winbox',
+        name: 'winbox64.exe',
         mimeType: 'application/x-msdownload',
         isFolder: false,
-        size: 87451648,
-        modifiedTime: '2026-11-19T09:05:00.000Z',
+        size: 2296320,
+        modifiedTime: '2026-11-25T09:05:00.000Z',
         fileExtension: 'exe',
-        webContentLink: 'https://file.abyakta-h.id/#demo-wireshark-exe',
+        md5Checksum: '9f86d081884c7d659a2feaa0c55ad015',
+        webContentLink: 'https://file.abyakta-h.id/#demo-winbox64-exe',
       },
       {
         id: 'demo-file-vbox',
@@ -257,6 +355,7 @@ export const DEMO_REPOSITORY_TREE = {
         size: 112680960,
         modifiedTime: '2026-11-21T16:45:00.000Z',
         fileExtension: 'msi',
+        md5Checksum: '4b227777d4dd1fc61c6f884f48641d02',
         webContentLink: 'https://file.abyakta-h.id/#demo-vbox-msi',
       },
       {
@@ -267,6 +366,7 @@ export const DEMO_REPOSITORY_TREE = {
         size: 548921344,
         modifiedTime: '2026-11-23T11:10:00.000Z',
         fileExtension: '7z',
+        md5Checksum: 'd4735e3a265e16eee03f59718b9b5d03',
         webContentLink: 'https://file.abyakta-h.id/#demo-starter-7z',
       },
       {
@@ -277,6 +377,7 @@ export const DEMO_REPOSITORY_TREE = {
         size: 18432,
         modifiedTime: '2026-11-24T13:00:00.000Z',
         fileExtension: 'ps1',
+        md5Checksum: '4e07408562bedb8b60ce05c1decfe3ad',
         webContentLink: 'https://file.abyakta-h.id/#demo-provision-ps1',
       },
       {
@@ -287,6 +388,7 @@ export const DEMO_REPOSITORY_TREE = {
         size: 4521984,
         modifiedTime: '2026-11-25T07:30:00.000Z',
         fileExtension: 'pdf',
+        md5Checksum: '6b86b273ff34fce19d6b804eff5a3f57',
         webContentLink: 'https://file.abyakta-h.id/#demo-panduan-pdf',
       },
     ],
@@ -304,6 +406,7 @@ export const DEMO_REPOSITORY_TREE = {
         size: 238942208,
         modifiedTime: '2026-11-20T08:45:00.000Z',
         fileExtension: 'exe',
+        md5Checksum: 'ef2d127de37b942baad06145e54b0c61',
         webContentLink: 'https://file.abyakta-h.id/#demo-pt-exe',
       },
       {
@@ -314,17 +417,8 @@ export const DEMO_REPOSITORY_TREE = {
         size: 12845056,
         modifiedTime: '2026-11-21T13:12:00.000Z',
         fileExtension: 'zip',
+        md5Checksum: 'e7f6c011776e8db7cd330b54174fd76f',
         webContentLink: 'https://file.abyakta-h.id/#demo-vlan-zip',
-      },
-      {
-        id: 'demo-jarkom-3',
-        name: 'net-diag-collector.py',
-        mimeType: 'text/x-python',
-        isFolder: false,
-        size: 9420,
-        modifiedTime: '2026-11-22T09:30:00.000Z',
-        fileExtension: 'py',
-        webContentLink: 'https://file.abyakta-h.id/#demo-netdiag-py',
       },
     ],
   },
@@ -341,19 +435,9 @@ export const DEMO_REPOSITORY_TREE = {
         size: 662700032,
         modifiedTime: '2026-11-22T10:30:00.000Z',
         fileExtension: 'iso',
+        md5Checksum: '7902699be42c8a8e46fbbb4501726517',
         webContentLink: 'https://file.abyakta-h.id/#demo-debian-iso',
-      },
-      {
-        id: 'demo-os-2',
-        name: 'setup-docker-rootless.sh',
-        mimeType: 'application/x-sh',
-        isFolder: false,
-        size: 6144,
-        modifiedTime: '2026-11-23T15:20:00.000Z',
-        fileExtension: 'sh',
-        webContentLink: 'https://file.abyakta-h.id/#demo-docker-sh',
       },
     ],
   },
 };
-

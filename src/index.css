@@ -4,32 +4,69 @@
 
 @layer base {
   :root {
-    --bg-grid: rgba(15, 23, 42, 0.04);
+    --bg-canvas: #f6f8fc;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f1f5f9;
+    --border-subtle: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --bg-grid: rgba(15, 23, 42, 0.035);
+    --ambient-glow: radial-gradient(65% 320px at 50% 0%, rgba(37, 99, 235, 0.07), transparent 75%);
+    --shadow-surface: 0 1px 2px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.02);
+    --shadow-hover: 0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
   }
 
   .dark {
-    --bg-grid: rgba(148, 163, 184, 0.05);
+    --bg-canvas: #060a14;
+    --bg-surface: #0c1222;
+    --bg-elevated: #131c32;
+    --border-subtle: #1e293b;
+    --border-strong: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --bg-grid: rgba(148, 163, 184, 0.04);
+    --ambient-glow: radial-gradient(60% 340px at 50% 0%, rgba(59, 130, 246, 0.12), transparent 80%);
+    --shadow-surface: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-hover: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 12px 28px -8px rgba(0, 0, 0, 0.55);
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: 1.5;
   }
 
-  /* Styling dialog modal natif agar bersih di Light & Dark Mode */
+  /* Interactive affordance & reduced tap latency (ui-ux-pro-max §2) */
+  button:not(:disabled),
+  a[href],
+  [role='button']:not([aria-disabled='true']),
+  summary {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Native modal dialog scrim & entrance */
   dialog::backdrop {
-    background-color: rgba(2, 6, 23, 0.65);
-    backdrop-filter: blur(4px);
+    background-color: rgba(3, 7, 18, 0.72);
+    backdrop-filter: blur(6px);
   }
 
   dialog[open] {
-    animation: modalFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: modalEnter 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
-@keyframes modalFadeIn {
+@keyframes modalEnter {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.985);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -37,13 +74,55 @@
   }
 }
 
-.bg-tech-grid {
-  background-image: linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
-  background-size: 24px 24px;
+@keyframes itemEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Scrollbar halus untuk tabel repositori */
+.animate-item-enter {
+  animation: itemEnter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Respect user reduced-motion preference (WCAG 2.2 / ui-ux-pro-max CRITICAL) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.bg-lab-atmosphere {
+  background-image: var(--ambient-glow),
+    linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+  background-size: 100% 100%, 28px 28px, 28px 28px;
+}
+
+.surface-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-surface);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+/* Subtle technical scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -54,11 +133,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.55);
+  background: rgba(148, 163, 184, 0.5);
 }
-
